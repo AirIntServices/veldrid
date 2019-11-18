@@ -652,6 +652,7 @@ namespace Veldrid.Vk
             }
 
             VkPhysicalDeviceFeatures deviceFeatures = new VkPhysicalDeviceFeatures();
+            deviceFeatures.independentBlend = _physicalDeviceFeatures.independentBlend;
             deviceFeatures.samplerAnisotropy = _physicalDeviceFeatures.samplerAnisotropy;
             deviceFeatures.fillModeNonSolid = _physicalDeviceFeatures.fillModeNonSolid;
             deviceFeatures.geometryShader = _physicalDeviceFeatures.geometryShader;
