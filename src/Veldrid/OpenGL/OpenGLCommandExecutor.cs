@@ -542,6 +542,17 @@ namespace Veldrid.OpenGL
                 }
             }
 
+            if (!_isSwapchainFB)
+            {
+                DrawBuffersEnum* bufs = stackalloc DrawBuffersEnum[blendState.AttachmentStates.Length];
+                for (int i = 0; i < blendState.AttachmentStates.Length; i++)
+                {
+                    bufs[i] = DrawBuffersEnum.ColorAttachment0 + i;
+                }
+                glDrawBuffers((uint)blendState.AttachmentStates.Length, bufs);
+                CheckLastError();
+            }
+
             // Depth Stencil State
 
             DepthStencilStateDescription dss = _graphicsPipeline.DepthStencilState;
