@@ -55,8 +55,26 @@ namespace Veldrid.OpenGL
         {
             if (!_isSwapchainFB)
             {
-                DrawBuffersEnum bufs = (DrawBuffersEnum)((uint)DrawBuffersEnum.ColorAttachment0 + index);
-                glDrawBuffers(1, &bufs);
+                // doesn't seem to have an impact on desktop GL
+                // impacts Android and iOS with multiple attachments per framebuffer
+                // https://stackoverflow.com/questions/43001265/gldrawbuffers-causes-gl-invalid-operation-when-setting-gl-color-attachment1-as-g/43001479
+                if(_backend == GraphicsBackend.OpenGLES)
+                {
+                    int maxI = index < _fb.ColorTargets.Count - 1 ? (int)index + 1 : _fb.ColorTargets.Count;
+                    DrawBuffersEnum* bufs = stackalloc DrawBuffersEnum[maxI];
+                    for (int i = 0; i < maxI; i++)
+                    {
+                        if (i != index)
+                            bufs[i] = DrawBuffersEnum.None;
+                        else
+                            bufs[i] = DrawBuffersEnum.ColorAttachment0 + i;
+                    }
+                    glDrawBuffers((uint)maxI, bufs);
+                } else
+                {
+                    DrawBuffersEnum bufs = (DrawBuffersEnum)((uint)DrawBuffersEnum.ColorAttachment0 + index);
+                    glDrawBuffers(1, &bufs);
+                }
                 CheckLastError();
             }
 
