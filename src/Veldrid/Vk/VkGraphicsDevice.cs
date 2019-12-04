@@ -23,6 +23,7 @@ namespace Veldrid.Vk
         private VkPhysicalDeviceFeatures _physicalDeviceFeatures;
         private VkPhysicalDeviceMemoryProperties _physicalDeviceMemProperties;
         private VkDevice _device;
+        private VkSurfaceKHR _surface;
         private uint _graphicsQueueIndex;
         private uint _presentQueueIndex;
         private VkCommandPool _graphicsCommandPool;
@@ -82,6 +83,7 @@ namespace Veldrid.Vk
 
         public VkInstance Instance => _instance;
         public VkDevice Device => _device;
+        public VkSurfaceKHR Surface => _surface;
         public VkPhysicalDevice PhysicalDevice => _physicalDevice;
         public VkPhysicalDeviceMemoryProperties PhysicalDeviceMemProperties => _physicalDeviceMemProperties;
         public VkQueue GraphicsQueue => _graphicsQueue;
@@ -109,14 +111,14 @@ namespace Veldrid.Vk
         {
             CreateInstance(options.Debug, vkOptions);
 
-            VkSurfaceKHR surface = VkSurfaceKHR.Null;
+            _surface = VkSurfaceKHR.Null;
             if (scDesc != null)
             {
-                surface = VkSurfaceUtil.CreateSurface(this, _instance, scDesc.Value.Source);
+                _surface = VkSurfaceUtil.CreateSurface(this, _instance, scDesc.Value.Source);
             }
 
             CreatePhysicalDevice();
-            CreateLogicalDevice(surface, options.PreferStandardClipSpaceYDirection, vkOptions);
+            CreateLogicalDevice(_surface, options.PreferStandardClipSpaceYDirection, vkOptions);
 
             _memoryManager = new VkDeviceMemoryManager(
                 _device,
@@ -150,7 +152,7 @@ namespace Veldrid.Vk
             if (scDesc != null)
             {
                 SwapchainDescription desc = scDesc.Value;
-                _mainSwapchain = new VkSwapchain(this, ref desc, surface);
+                _mainSwapchain = new VkSwapchain(this, ref desc, _surface);
             }
 
             CreateDescriptorPool();
@@ -956,6 +958,7 @@ namespace Veldrid.Vk
             VkResult result = vkDeviceWaitIdle(_device);
             CheckResult(result);
             vkDestroyDevice(_device, null);
+            vkDestroySurfaceKHR(_instance, _surface, null);
             vkDestroyInstance(_instance, null);
         }
 
