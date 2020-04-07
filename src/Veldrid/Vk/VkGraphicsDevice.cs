@@ -1360,22 +1360,32 @@ namespace Veldrid.Vk
 
         internal void ClearColorTexture(VkTexture texture, VkClearColorValue color)
         {
+            uint effectiveLayers = texture.ArrayLayers;
+            if ((texture.Usage & TextureUsage.Cubemap) != 0)
+            {
+                effectiveLayers *= 6;
+            }
             VkImageSubresourceRange range = new VkImageSubresourceRange(
                  VkImageAspectFlags.Color,
                  0,
                  texture.MipLevels,
                  0,
-                 texture.ArrayLayers);
+                 effectiveLayers);
             SharedCommandPool pool = GetFreeCommandPool();
             VkCommandBuffer cb = pool.BeginNewCommandBuffer();
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, texture.ArrayLayers, VkImageLayout.TransferDstOptimal);
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.TransferDstOptimal);
             vkCmdClearColorImage(cb, texture.OptimalDeviceImage, VkImageLayout.TransferDstOptimal, &color, 1, &range);
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, texture.ArrayLayers, VkImageLayout.ColorAttachmentOptimal);
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.ColorAttachmentOptimal);
             pool.EndAndSubmit(cb);
         }
 
         internal void ClearDepthTexture(VkTexture texture, VkClearDepthStencilValue clearValue)
         {
+            uint effectiveLayers = texture.ArrayLayers;
+            if ((texture.Usage & TextureUsage.Cubemap) != 0)
+            {
+                effectiveLayers *= 6;
+            }
             VkImageAspectFlags aspect = FormatHelpers.IsStencilFormat(texture.Format)
                 ? VkImageAspectFlags.Depth | VkImageAspectFlags.Stencil
                 : VkImageAspectFlags.Depth;
@@ -1384,10 +1394,10 @@ namespace Veldrid.Vk
                 0,
                 texture.MipLevels,
                 0,
-                texture.ArrayLayers);
+                effectiveLayers);
             SharedCommandPool pool = GetFreeCommandPool();
             VkCommandBuffer cb = pool.BeginNewCommandBuffer();
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, texture.ArrayLayers, VkImageLayout.TransferDstOptimal);
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.TransferDstOptimal);
             vkCmdClearDepthStencilImage(
                 cb,
                 texture.OptimalDeviceImage,
@@ -1395,7 +1405,7 @@ namespace Veldrid.Vk
                 &clearValue,
                 1,
                 &range);
-            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, texture.ArrayLayers, VkImageLayout.DepthStencilAttachmentOptimal);
+            texture.TransitionImageLayout(cb, 0, texture.MipLevels, 0, effectiveLayers, VkImageLayout.DepthStencilAttachmentOptimal);
             pool.EndAndSubmit(cb);
         }
 

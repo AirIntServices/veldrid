@@ -56,6 +56,8 @@ namespace Veldrid.Vk
 
         public ResourceRefCount RefCount { get; }
 
+        public override bool IsDisposed => _destroyed;
+
         public VkCommandList(VkGraphicsDevice gd, ref CommandListDescription description)
             : base(ref description, gd.Features, gd.UniformBufferMinOffsetAlignment, gd.StructuredBufferMinOffsetAlignment)
         {
@@ -919,6 +921,9 @@ namespace Veldrid.Vk
                 uint rowPitch = FormatHelpers.GetRowPitch(bufferRowLength, srcVkTexture.Format);
                 uint depthPitch = FormatHelpers.GetDepthPitch(rowPitch, bufferImageHeight, srcVkTexture.Format);
 
+                uint copyWidth = Math.Min(width, mipWidth);
+                uint copyheight = Math.Min(height, mipHeight);
+
                 VkBufferImageCopy regions = new VkBufferImageCopy
                 {
                     bufferOffset = srcLayout.offset
@@ -927,7 +932,7 @@ namespace Veldrid.Vk
                         + (compressedX * blockSizeInBytes),
                     bufferRowLength = bufferRowLength,
                     bufferImageHeight = bufferImageHeight,
-                    imageExtent = new VkExtent3D { width = width, height = height, depth = depth },
+                    imageExtent = new VkExtent3D { width = copyWidth, height = copyheight, depth = depth },
                     imageOffset = new VkOffset3D { x = (int)dstX, y = (int)dstY, z = (int)dstZ },
                     imageSubresource = dstSubresource
                 };
@@ -959,9 +964,13 @@ namespace Veldrid.Vk
                 Vulkan.VkBuffer dstBuffer = dstVkTexture.StagingBuffer;
                 VkSubresourceLayout dstLayout = dstVkTexture.GetSubresourceLayout(
                     dstVkTexture.CalculateSubresource(dstMipLevel, dstBaseArrayLayer));
+
+                VkImageAspectFlags aspect = (srcVkTexture.Usage & TextureUsage.DepthStencil) != 0
+                    ? VkImageAspectFlags.Depth
+                    : VkImageAspectFlags.Color;
                 VkImageSubresourceLayers srcSubresource = new VkImageSubresourceLayers
                 {
-                    aspectMask = VkImageAspectFlags.Color,
+                    aspectMask = aspect,
                     layerCount = layerCount,
                     mipLevel = srcMipLevel,
                     baseArrayLayer = srcBaseArrayLayer

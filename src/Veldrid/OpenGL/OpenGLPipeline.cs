@@ -30,6 +30,7 @@ namespace Veldrid.OpenGL
         public Shader ComputeShader { get; }
 
         private uint _program;
+        private bool _disposeRequested;
         private bool _disposed;
 
         private SetBindingsInfo[] _setInfos;
@@ -42,6 +43,8 @@ namespace Veldrid.OpenGL
         public uint GetShaderStorageBufferCount(uint setSlot) => _setInfos[setSlot].ShaderStorageBufferCount;
 
         public override string Name { get; set; }
+
+        public override bool IsDisposed => _disposeRequested;
 
         public OpenGLPipeline(OpenGLGraphicsDevice gd, ref GraphicsPipelineDescription description)
             : base(ref description)
@@ -424,7 +427,11 @@ namespace Veldrid.OpenGL
 
         public override void Dispose()
         {
-            _gd.EnqueueDisposal(this);
+            if (!_disposeRequested)
+            {
+                _disposeRequested = true;
+                _gd.EnqueueDisposal(this);
+            }
         }
 
         public void DestroyGLResources()

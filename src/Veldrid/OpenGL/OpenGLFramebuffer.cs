@@ -11,6 +11,7 @@ namespace Veldrid.OpenGL
 
         private string _name;
         private bool _nameChanged;
+        private bool _disposeRequested;
         private bool _disposed;
 
         public override string Name { get => _name; set { _name = value; _nameChanged = true; } }
@@ -18,6 +19,8 @@ namespace Veldrid.OpenGL
         public uint Framebuffer => _framebuffer;
 
         public bool Created { get; private set; }
+
+        public override bool IsDisposed => _disposeRequested;
 
         public OpenGLFramebuffer(OpenGLGraphicsDevice gd, ref FramebufferDescription description)
             : base(description.DepthTarget, description.ColorTargets)
@@ -62,12 +65,39 @@ namespace Veldrid.OpenGL
                     _gd.TextureSamplerManager.SetTextureTransient(glTex.TextureTarget, glTex.Texture);
                     CheckLastError();
 
+                    var textureTarget = glTex.TextureTarget;
+
+                    if ((glTex.Usage & TextureUsage.Cubemap) == TextureUsage.Cubemap)
+                    {
+                        switch (colorAttachment.ArrayLayer % 6)
+                        {
+                            case 0:
+                                textureTarget = TextureTarget.TextureCubeMapPositiveX;
+                                break;
+                            case 1:
+                                textureTarget = TextureTarget.TextureCubeMapNegativeX;
+                                break;
+                            case 2:
+                                textureTarget = TextureTarget.TextureCubeMapPositiveY;
+                                break;
+                            case 3:
+                                textureTarget = TextureTarget.TextureCubeMapNegativeY;
+                                break;
+                            case 4:
+                                textureTarget = TextureTarget.TextureCubeMapPositiveZ;
+                                break;
+                            case 5:
+                                textureTarget = TextureTarget.TextureCubeMapNegativeZ;
+                                break;
+                        }
+                    }
+
                     if (glTex.ArrayLayers == 1)
                     {
                         glFramebufferTexture2D(
                             FramebufferTarget.Framebuffer,
                             GLFramebufferAttachment.ColorAttachment0 + i,
-                            glTex.TextureTarget,
+                            textureTarget,
                             glTex.Texture,
                             (int)colorAttachment.MipLevel);
                         CheckLastError();
@@ -77,9 +107,10 @@ namespace Veldrid.OpenGL
                         glFramebufferTextureLayer(
                             FramebufferTarget.Framebuffer,
                             GLFramebufferAttachment.ColorAttachment0 + i,
-                            glTex.Texture,
+                            (uint)glTex.Texture,
                             (int)colorAttachment.MipLevel,
                             (int)colorAttachment.ArrayLayer);
+                        CheckLastError();
                     }
                 }
 
@@ -146,7 +177,11 @@ namespace Veldrid.OpenGL
 
         public override void Dispose()
         {
-            _gd.EnqueueDisposal(this);
+            if (!_disposeRequested)
+            {
+                _disposeRequested = true;
+                _gd.EnqueueDisposal(this);
+            }
         }
 
         public void DestroyGLResources()

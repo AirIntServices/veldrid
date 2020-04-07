@@ -97,6 +97,8 @@ namespace Veldrid.D3D11
 
         private D3D11Framebuffer D3D11Framebuffer => Util.AssertSubtype<Framebuffer, D3D11Framebuffer>(_framebuffer);
 
+        public override bool IsDisposed => _disposed;
+
         public override void Begin()
         {
             DeviceCommandList?.Dispose();
@@ -1150,7 +1152,7 @@ namespace Veldrid.D3D11
 
         private protected override void ClearDepthStencilCore(float depth, byte stencil)
         {
-            _context.ClearDepthStencilView(D3D11Framebuffer.DepthStencilView, DepthStencilClearFlags.Depth, depth, stencil);
+            _context.ClearDepthStencilView(D3D11Framebuffer.DepthStencilView, DepthStencilClearFlags.Depth | DepthStencilClearFlags.Stencil, depth, stencil);
         }
 
         private protected unsafe override void UpdateBufferCore(DeviceBuffer buffer, uint bufferOffsetInBytes, IntPtr source, uint sizeInBytes)
@@ -1281,13 +1283,18 @@ namespace Veldrid.D3D11
             uint clampedWidth = Math.Max(blockSize, width);
             uint clampedHeight = Math.Max(blockSize, height);
 
-            ResourceRegion region = new ResourceRegion(
-                (int)srcX,
-                (int)srcY,
-                (int)srcZ,
-                (int)(srcX + clampedWidth),
-                (int)(srcY + clampedHeight),
-                (int)(srcZ + depth));
+            ResourceRegion? region = null;
+            if (srcX != 0 || srcY != 0 || srcZ != 0
+                || clampedWidth != source.Width || clampedHeight != source.Height || depth != source.Depth)
+            {
+                region = new ResourceRegion(
+                    (int)srcX,
+                    (int)srcY,
+                    (int)srcZ,
+                    (int)(srcX + clampedWidth),
+                    (int)(srcY + clampedHeight),
+                    (int)(srcZ + depth));
+            }
 
             for (uint i = 0; i < layerCount; i++)
             {
