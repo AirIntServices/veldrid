@@ -981,7 +981,6 @@ namespace Veldrid.Vk
             VkResult result = vkDeviceWaitIdle(_device);
             CheckResult(result);
             vkDestroyDevice(_device, null);
-            vkDestroySurfaceKHR(_instance, _surface, null);
             vkDestroyInstance(_instance, null);
         }
 
